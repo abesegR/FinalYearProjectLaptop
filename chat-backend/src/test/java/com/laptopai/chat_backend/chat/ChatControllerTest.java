@@ -9,14 +9,20 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class ChatControllerTest {
 
+    private ChatController controllerWith(ClaudeService claudeService, ScoringService scoringService) {
+        return new ChatController(claudeService, scoringService);
+    }
+
     @Test
     void wrapsTextModelOutputIntoReplyForFrontend() {
         ClaudeService claudeService = mock(ClaudeService.class);
-        ChatController controller = new ChatController(claudeService);
+        ScoringService scoringService = mock(ScoringService.class);
+        ChatController controller = controllerWith(claudeService, scoringService);
         ChatRequest request = new ChatRequest();
         request.setSessionId("session-1");
         request.setMessage("Hi");
@@ -29,12 +35,14 @@ class ChatControllerTest {
         assertThat(response.path("assistantMessage").asText()).isEqualTo("Hello from model");
         assertThat(response.path("reply").asText()).isEqualTo("Hello from model");
         assertThat(response.path("collectorScores").isObject()).isTrue();
+        verifyNoInteractions(scoringService);
     }
 
     @Test
     void backfillsReplyWhenModelReturnsNullReplyField() {
         ClaudeService claudeService = mock(ClaudeService.class);
-        ChatController controller = new ChatController(claudeService);
+        ScoringService scoringService = mock(ScoringService.class);
+        ChatController controller = controllerWith(claudeService, scoringService);
         ChatRequest request = new ChatRequest();
         request.setSessionId("session-2");
         request.setMessage("Need gaming laptop");
@@ -51,12 +59,14 @@ class ChatControllerTest {
         assertThat(response.path("assistantMessage").asText()).isEqualTo("Let's target a strong GPU.");
         assertThat(response.path("reply").asText()).isEqualTo("Let's target a strong GPU.");
         assertThat(response.path("message").asText()).isEqualTo("Let's target a strong GPU.");
+        verifyNoInteractions(scoringService);
     }
 
     @Test
     void recoversAssistantMessageFromJsonLikeText() {
         ClaudeService claudeService = mock(ClaudeService.class);
-        ChatController controller = new ChatController(claudeService);
+        ScoringService scoringService = mock(ScoringService.class);
+        ChatController controller = controllerWith(claudeService, scoringService);
         ChatRequest request = new ChatRequest();
         request.setSessionId("session-3");
         request.setMessage("I need a workstation");
@@ -76,12 +86,14 @@ class ChatControllerTest {
         assertThat(response.path("collectorScores").path("maxPrice").asInt()).isEqualTo(250000);
         assertThat(response.path("collectorScores").path("cpuWeight").asInt()).isEqualTo(9);
         assertThat(response.path("collectorScores").path("gpuWeight").asInt()).isEqualTo(8);
+        verifyNoInteractions(scoringService);
     }
 
     @Test
     void hidesWeightsWhileFollowUpQuestionsRemain() {
         ClaudeService claudeService = mock(ClaudeService.class);
-        ChatController controller = new ChatController(claudeService);
+        ScoringService scoringService = mock(ScoringService.class);
+        ChatController controller = controllerWith(claudeService, scoringService);
         ChatRequest request = new ChatRequest();
         request.setSessionId("session-4");
         request.setMessage("I need a laptop");
@@ -107,12 +119,14 @@ class ChatControllerTest {
         assertThat(response.path("collectorScores").path("gpuWeight").isNull()).isTrue();
         assertThat(response.path("collectorScores").path("ramWeight").isNull()).isTrue();
         assertThat(response.path("collectorScores").path("batteryWeight").isNull()).isTrue();
+        verifyNoInteractions(scoringService);
     }
 
     @Test
     void kickoffTurnDoesNotExposeWeights() {
         ClaudeService claudeService = mock(ClaudeService.class);
-        ChatController controller = new ChatController(claudeService);
+        ScoringService scoringService = mock(ScoringService.class);
+        ChatController controller = controllerWith(claudeService, scoringService);
         ChatRequest request = new ChatRequest();
         request.setSessionId("session-5");
         request.setMessage("");
@@ -136,5 +150,6 @@ class ChatControllerTest {
         assertThat(response.path("collectorScores").path("gpuWeight").isNull()).isTrue();
         assertThat(response.path("collectorScores").path("ramWeight").isNull()).isTrue();
         assertThat(response.path("collectorScores").path("batteryWeight").isNull()).isTrue();
+        verifyNoInteractions(scoringService);
     }
 }

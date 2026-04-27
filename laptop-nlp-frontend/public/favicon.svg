@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>LaptopAI</title>
+  <defs>
+    <linearGradient id="screen" x1="12" y1="10" x2="52" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00d9ff" />
+      <stop offset="1" stop-color="#ff006e" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#0a0e27" />
+  <rect x="15" y="14" width="34" height="24" rx="4" fill="none" stroke="url(#screen)" stroke-width="4" />
+  <path d="M10 44h44l-4 6H14z" fill="url(#screen)" />
+  <path d="M30 20l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#e8f4f8" />
+</svg>

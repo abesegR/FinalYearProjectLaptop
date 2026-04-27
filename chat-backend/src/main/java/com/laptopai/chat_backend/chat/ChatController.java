@@ -24,11 +24,13 @@ public class ChatController {
     private static final String OPENING_USER_PROMPT = "Start a new laptop-needs conversation. Be friendly and ask one concise question about the user's primary work and which software they use most. Do not provide weights yet.";
 
     private final ClaudeService claudeService;
+    private final ScoringService scoringService;
     private final ObjectMapper mapper = new ObjectMapper();
     private final Map<String, ConversationContext> conversationHistory = new ConcurrentHashMap<>();
 
-    public ChatController(ClaudeService claudeService) {
+    public ChatController(ClaudeService claudeService, ScoringService scoringService) {
         this.claudeService = claudeService;
+        this.scoringService = scoringService;
     }
 
     @PostMapping
@@ -49,7 +51,11 @@ public class ChatController {
         }
 
         JsonNode rawResponse = claudeService.generateStructuredResponse(modelMessages);
-        JsonNode response = normalizeResponse(rawResponse);
+        JsonNode response = rawResponse == null
+                ? buildOfflineResponse(isKickoffTurn)
+                : normalizeResponse(rawResponse);
+
+        
 
         String assistant = extractAssistantMessage(response);
         if (assistant != null && !assistant.isBlank()) {
@@ -59,6 +65,27 @@ public class ChatController {
         JsonNode finalResponse = withLegacyFields(response, assistant);
         if (isKickoffTurn && finalResponse instanceof ObjectNode objectNode) {
             clearWeightFields(objectNode.with("collectorScores"));
+        }
+        JsonNode readyNode = finalResponse.path("readyForWeights");
+        boolean shouldScore = !isKickoffTurn
+                && finalResponse instanceof ObjectNode objectNode
+                && shouldExposeWeights(objectNode)
+                && readyNode.isBoolean()
+                && readyNode.asBoolean();
+        System.out.println("DEBUG readyForWeights: " + finalResponse.path("readyForWeights"));
+System.out.println("DEBUG shouldExposeWeights: " + (finalResponse instanceof ObjectNode on2 && shouldExposeWeights(on2)));
+System.out.println("DEBUG isKickoff: " + isKickoffTurn);
+        if (shouldScore && finalResponse instanceof ObjectNode on) {
+            JsonNode cs = finalResponse.path("collectorScores");
+            CollectorScores scores = new CollectorScores(
+                    cs.path("maxPrice").isNull() ? null : cs.path("maxPrice").intValue(),
+                    cs.path("cpuWeight").isNull() ? null : cs.path("cpuWeight").intValue(),
+                    cs.path("gpuWeight").isNull() ? null : cs.path("gpuWeight").intValue(),
+                    cs.path("ramWeight").isNull() ? null : cs.path("ramWeight").intValue(),
+                    cs.path("batteryWeight").isNull() ? null : cs.path("batteryWeight").intValue()
+            );
+            List<Map<String, Object>> top = scoringService.getTopLaptops(scores, 5);
+            on.set("recommendations", mapper.valueToTree(top));
         }
         return finalResponse;
     }
@@ -296,6 +323,13 @@ public class ChatController {
         toolRequest.set("queries", mapper.createArrayNode());
 
         return root;
+    }
+
+    private JsonNode buildOfflineResponse(boolean isKickoffTurn) {
+        if (isKickoffTurn) {
+            return buildFallbackResponse("AI responses are offline right now because no model is configured. Add ANTHROPIC_API_KEY, then restart the backend.");
+        }
+        return buildFallbackResponse("AI responses are offline right now because no model is configured. Add ANTHROPIC_API_KEY, then restart the backend.");
     }
 
     private JsonNode withLegacyFields(JsonNode response, String assistantMessage) {
