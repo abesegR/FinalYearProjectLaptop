@@ -1,0 +1,16 @@
+# Environment files - never commit these
+.env
+**/.env
+sentiment-service/.env
+
+# Java
+chat-backend/target/
+chat-backend/.mvn/
+
+# Node
+laptop-nlp-frontend/node_modules/
+laptop-nlp-frontend/dist/
+
+# Python
+sentiment-service/__pycache__/
+sentiment-service/*.pyc
