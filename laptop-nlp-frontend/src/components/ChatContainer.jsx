@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 
 const SESSION_KEY = "laptop_chat_session_id";
-const API_BASE_URL = "http://localhost:8080";
+const API_BASE_URL = import.meta.env.API_BASE_URL;
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem("laptopai_token");
   return {
@@ -300,7 +301,8 @@ export default function ChatContainer() {
           setMessages([
             makeMessage(
               "assistant",
-              error.message || "Too many requests. Please wait a moment and try again.",
+              error.message ||
+                "Too many requests. Please wait a moment and try again.",
             ),
           ]);
           return;
@@ -347,7 +349,8 @@ export default function ChatContainer() {
           ...prev,
           makeMessage(
             "assistant",
-            error.message || "Too many requests. Please wait a moment and try again.",
+            error.message ||
+              "Too many requests. Please wait a moment and try again.",
           ),
         ]);
         return;
@@ -817,7 +820,11 @@ export default function ChatContainer() {
                               fontWeight: 600,
                             }}
                           >
-                            {val === null ? "—" : <AnimatedNumber value={val} />}
+                            {val === null ? (
+                              "—"
+                            ) : (
+                              <AnimatedNumber value={val} />
+                            )}
                           </span>
                         </div>
                         <div
@@ -1358,7 +1365,9 @@ export default function ChatContainer() {
                               style={{
                                 marginLeft: 8,
                                 fontSize: "0.62rem",
-                                color: laptop.anyInStock ? "#4edea3" : "#f87171",
+                                color: laptop.anyInStock
+                                  ? "#4edea3"
+                                  : "#f87171",
                                 background: laptop.anyInStock
                                   ? "rgba(78,222,163,0.1)"
                                   : "rgba(248,113,113,0.1)",
